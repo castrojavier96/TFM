@@ -1,4 +1,12 @@
 # REBALANCEADOR
+import subprocess
+
+# Definir el comando que se ejecutará en la terminal
+command = 'pip install -r requirements.txt'
+
+# Ejecutar el comando en la terminal desde Python
+subprocess.call(command, shell=True)
+
 
 import numpy as np
 import pandas as pd
