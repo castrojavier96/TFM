@@ -1,4 +1,4 @@
-# ESTRATEGIA MOMENTUM
+# ESTRATEGIA Volatilidad max
 
 import numpy as np
 import pandas as pd
