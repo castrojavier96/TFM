@@ -4,7 +4,6 @@
 import numpy as np
 import pandas as pd
 import keras
-
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -15,6 +14,8 @@ from tensorflow.keras.layers import Dropout
 from keras.utils.np_utils import to_categorical  
 import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
+import seaborn as sn
 
 #Se define la funcion para poder crear y entrenar el modelo
 def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion, pib): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
@@ -24,9 +25,11 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     serie_EW.columns = ['EW']
     serie_volatilidad.columns = ['Vol']
     serie_volmin.columns = ['Vol_min']
+    serie_cash = pd.DataFrame(pd.Series([10000] * len(serie_momentum))).set_index(serie_momentum.index)
 
     # concatenamos las series de precio en un solo dataframe
-    estrategias_close = pd.concat([serie_momentum, serie_EW, serie_volatilidad, serie_volmin], axis=1)
+    estrategias_close = pd.concat([serie_momentum, serie_EW, serie_volatilidad, serie_volmin,serie_cash], axis=1)
+    estrategias_close = estrategias_close.rename(columns={0:'Cash'})
     estrategias_close.plot() # se grafican para ver que pinta tienen
 
     # Se calcula la rentabilidad de diaria de los datos
@@ -36,8 +39,8 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     vol_estrategias_mensual = rent_estrategias.resample('M').std()
 
     # Se les pone nombre a las columnas de los nuevos dataframes
-    rent_estrategias_mensual.columns = ['Rent Momentum', 'Rent EW', 'Rent volatilidad', 'Rent Volmin']
-    vol_estrategias_mensual.columns = ['Vol Momentum', 'Vol EW', 'Vol volatilidad', 'Vol Volmin']
+    rent_estrategias_mensual.columns = ['Rent Momentum', 'Rent EW', 'Rent volatilidad', 'Rent Volmin','Rent cash']
+    vol_estrategias_mensual.columns = ['Vol Momentum', 'Vol EW', 'Vol volatilidad', 'Vol Volmin', 'Vol cash']
 
     # concatenamos todo y se dropean filas con NA
     datos_inputs = pd.concat([rent_estrategias_mensual, vol_estrategias_mensual], axis=1)
@@ -47,7 +50,7 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     
     # Se agregan los datos Macroeconomicos como la inflacion y el PIB
     inflacion.reset_index(drop=True, inplace=True)
-    datos_inputs = pd.concat([datos_inputs, inflacion, pib], ignore_index=True, axis=1) 
+    datos_inputs = pd.concat([datos_inputs, inflacion], ignore_index=True, axis=1) 
 
     # para el output del modelo se obtiene que estrategia le fue mejor en el mes siguiente
     datos_output = rent_estrategias_mensual.idxmax(axis=1)
@@ -56,11 +59,12 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     datos_output.loc[datos_output=='Rent EW'] = 1
     datos_output.loc[datos_output=='Rent volatilidad'] = 2
     datos_output.loc[datos_output=='Rent Volmin'] = 3
+    datos_output.loc[datos_output=='Rent cash'] = 4
     #Se dropean filas con NA
     datos_output.drop(datos_output.index[0:2], inplace=True)
 
     datos_output = np.asarray(datos_output).astype('float32') # pasamos los datos float
-    datos_output_cat = to_categorical(datos_output, num_classes=4) # se pasa a categoricos como one hot
+    datos_output_cat = to_categorical(datos_output, num_classes=5) # se pasa a categoricos como one hot
     print(datos_output_cat.sum(axis=0))
     
     x_train, x_test, t_train, t_test = train_test_split(datos_inputs, datos_output_cat, test_size=0.3, random_state=35) # se separan los datos en train y test
@@ -85,7 +89,7 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     model.add(BatchNormalization())
     model.add(Activation('sigmoid'))
     model.add(Dropout(rate=dropout))
-    model.add(Dense(4,input_shape=(64,), activation='softmax',kernel_initializer=keras.initializers.glorot_normal(),kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
+    model.add(Dense(5,input_shape=(64,), activation='softmax',kernel_initializer=keras.initializers.glorot_normal(),kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
     #-------------------------------------------------------------
 
     model.summary()
@@ -121,14 +125,40 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     plt.xlabel('epoch')
     plt.ylabel('predicciones')
     plt.legend()
+
     # Se hacen predicciones para todo el Dataframe y se grafican
-    y_hat = model.predict(datos_inputs.values)
+    datos_inputs_esc=scaler.transform(datos_inputs.values)
 
+    # se calcula la matriz de confucion y se grafica
+    matrix = confusion_matrix(np.argmax(t_test,axis = 1), np.argmax(y_hat, axis=1))
     plt.figure()
-    plt.plot(y_hat, label='predicciones')
-    plt.title('Predicciones')
-    plt.xlabel('epoch')
-    plt.ylabel('predicciones')
-    plt.legend()
+    sn.heatmap(matrix, annot=True)
+    plt.title('Matriz de Confusion Modelo')
+    plt.show()
 
-    return model, datos_inputs, datos_output # nos quedamos con el modelo y los datos inputs
+    # Se grafican los falsos positivos y falsos negativos
+    plt.figure(figsize=(16, 4))
+    for i in range(5):
+        fpr, tpr, thresholds = roc_curve(np.argmax(t_test,axis = 1) == i, np.argmax(y_hat, axis=1) == i)
+        plt.subplot(1,5,i+1)
+        plt.plot(fpr, tpr)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+
+        plt.grid()
+    plt.show()
+
+    # Se grafica el recall  y la presicion
+    plt.figure(figsize=(16, 4))
+    for i in range(5):
+        prec, recall, _ = precision_recall_curve(np.argmax(t_test,axis = 1) == i, np.argmax(y_hat, axis=1) == i)
+        print(recall, prec)
+        plt.subplot(1,5,i+1)
+        plt.plot(recall, prec)
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.ylim(-0.05, 1.05)
+        plt.grid()
+    plt.show()
+
+    return model, datos_inputs, datos_output, datos_inputs_esc # nos quedamos con el modelo y los datos inputs

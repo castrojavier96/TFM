@@ -93,16 +93,18 @@ def red_neuronal(datos_inputs, datos_output):
     nepocas = 500
     eta = 0.1
     # Se inicializa el modelo
-    model = NeuralNetworkModel([12, 20, 4])
+    model = NeuralNetworkModel([12, 20, 5])
 
     y_train = y_train.reshape(y_train.shape[0],1).astype(np.int64)# Se hace el reshape para pasar de (81,) a (81,1)
     y_test = y_test.reshape(y_test.shape[0],1)
     loss = model.fit(X_train, y_train, eta, nepocas) # se entrena el modelo
     # se grafica el error
+    plt.figure()
     plt.plot(loss)
     plt.grid(True)
     plt.xlabel("época")
     plt.ylabel("Cross-entropy loss")
+    plt.title('Error del modelo "Red Neuronal"')
     plt.show()
     # se hacen predicciones
     preds_train = model.predict(X_train).numpy()
@@ -113,15 +115,16 @@ def red_neuronal(datos_inputs, datos_output):
 
     # se calcula la matriz de confucion y se grafica
     matrix = confusion_matrix(y_test[:, 0], np.argmax(preds_test, axis=1))
-
+    plt.figure()
     sn.heatmap(matrix, annot=True)
+    plt.title('Matriz de Confusion Modelo "Red Neuronal"')    
     plt.show()
 
     # Se grafican los falsos positivos y falsos negativos
     plt.figure(figsize=(16, 4))
-    for i in range(3):
+    for i in range(5):
         fpr, tpr, thresholds = roc_curve(y_test[:, 0] == i, np.argmax(preds_test, axis=1) == i)
-        plt.subplot(1,3,i+1)
+        plt.subplot(1,5,i+1)
         plt.plot(fpr, tpr)
         plt.xlabel("False Positive Rate")
         plt.ylabel("True Positive Rate")
@@ -131,10 +134,10 @@ def red_neuronal(datos_inputs, datos_output):
 
     # Se grafica el recall  y la presicion
     plt.figure(figsize=(16, 4))
-    for i in range(3):
+    for i in range(5):
         prec, recall, _ = precision_recall_curve(y_test[:, 0] == i, np.argmax(preds_test, axis=1) == i)
         print(recall, prec)
-        plt.subplot(1,3,i+1)
+        plt.subplot(1,5,i+1)
         plt.plot(recall, prec)
         plt.xlabel("Recall")
         plt.ylabel("Precision")

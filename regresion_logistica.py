@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
+import seaborn as sn
 
 # Se define la funcion
 def regresion_logistica(datos_inputs, datos_output):
@@ -109,5 +112,39 @@ def regresion_logistica(datos_inputs, datos_output):
   # Se calcula el accuracy tanto en train como test
   print("Accuracy (train):", model.accuracy(X_train, y_train))
   print("Accuracy (test):", model.accuracy(X_test, y_test))
-  
+
+  preds_test = model.predict(X_test)
+  matrix = confusion_matrix(y_test, np.argmax(preds_test, axis=1))
+
+  plt.figure()
+  sn.heatmap(matrix, annot=True)
+  plt.title('Matriz de Confusion Modelo "Regresion Logistica"')
+  plt.show()
+
+  # Se grafican los falsos positivos y falsos negativos
+  plt.figure(figsize=(16, 4))
+  for i in range(5):
+      fpr, tpr, thresholds = roc_curve(y_test == i, np.argmax(preds_test, axis=1) == i)
+      plt.subplot(1,5,i+1)
+      plt.plot(fpr, tpr)
+      plt.xlabel("False Positive Rate")
+      plt.ylabel("True Positive Rate")
+
+      plt.grid()
+  plt.show()
+
+  # Se grafica el recall  y la presicion
+  plt.figure(figsize=(16, 4))
+  for i in range(5):
+      prec, recall, _ = precision_recall_curve(y_test == i, np.argmax(preds_test, axis=1) == i)
+      print(recall, prec)
+      plt.subplot(1,5,i+1)
+      plt.plot(recall, prec)
+      plt.xlabel("Recall")
+      plt.ylabel("Precision")
+      plt.ylim(-0.05, 1.05)
+      plt.grid()
+  plt.show()
+
+
   return model

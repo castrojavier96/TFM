@@ -21,19 +21,21 @@ def monos(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_o
     df_acciones_mes_pasado_volmin = pd.DataFrame(0, index=[0], columns=range(10))    
     for i in range(42,len(activos_close)):
         if activos_close.index[i].month != activos_close.index[i-1].month:
-            reb_monos = pd.DataFrame(np.random.dirichlet(np.ones(4), size=1)) # se guardan las predicciones hechas por los modelos en un dataframe
+            reb_monos = pd.DataFrame(np.random.dirichlet(np.ones(5), size=1)) # se guardan las predicciones hechas por los modelos en un dataframe
             if i==42: # condicion de si se iniciando el dataframe para definir el capital a utilizar
                 capital_momentum = capital_inicial
                 capital_EW = capital_inicial
                 capital_vol = capital_inicial
                 capital_volmin = capital_inicial
+                capital_cash = (capital_inicial*4*100/90)*0.1
             else: # se actualiza de esta forma para los siguientes rebalanceos y se rebalancea segun el input de la prediccion
-                capital_int = ((n_acciones*activos_close[activos_momentum].iloc[i-1]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i-1]).sum() + delta_EW) +((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin)
+                capital_int = ((n_acciones*activos_close[activos_momentum].iloc[i-1]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i-1]).sum() + delta_EW) +((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) + capital_cash
 
                 capital_momentum = capital_int * reb_monos.iloc[0,0]
                 capital_EW = capital_int * reb_monos.iloc[0,1]
                 capital_vol = capital_int * reb_monos.iloc[0,2]
                 capital_volmin = capital_int * reb_monos.iloc[0,3]
+                capital_cash = capital_int * reb_monos.iloc[0,4]
 
             #segun cada estrategia se calcula:
             # - Numero de acciones a comprar
@@ -89,5 +91,5 @@ def monos(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_o
             comision_total = comision_total + comision_venta + comision_compra
 
         # Se guarda el valor del protafolio valorizado todos los dias al close
-        serie_reb.append(((n_acciones*activos_close[activos_momentum].iloc[i]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i]).sum() + delta_EW) + ((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin))
+        serie_reb.append(((n_acciones*activos_close[activos_momentum].iloc[i]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i]).sum() + delta_EW) + ((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) + capital_cash)
     return serie_reb, comision_total, diferencias # se devuelve como output la serie de precios, la comision de esta y el dataframe con todas las ordenes de compra/venta

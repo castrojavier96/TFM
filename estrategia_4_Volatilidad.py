@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 def obtener_precios_vol(activos_close,n_activos,capital_inicial,com):
     # creamos listas a rellenar
@@ -29,10 +29,22 @@ def obtener_precios_vol(activos_close,n_activos,capital_inicial,com):
     # Aqui se grafica la serie historica de la estrategia junto con la volatilidad de la misma
     serie_Volatilidad = pd.DataFrame(serie_Volatilidad)
     serie_Volatilidad.set_index(activos_close.index[22:], inplace=True)
-    serie_Volatilidad.plot()
+    plt.figure()
+    plt.plot(serie_Volatilidad, label = 'Serie Volatilidad Maxima')
+    plt.title('Estretegia Volatilidad Max')
+    plt.xlabel('Fechas')
+    plt.ylabel('Precio')
+    plt.legend()
+    # serie_Volatilidad.plot()
 
     rent_Vol = np.log(serie_Volatilidad).diff().dropna(axis=0)
     vol_Volatilidad = rent_Vol.rolling(window=20).std()
-    vol_Volatilidad.plot()
+    plt.figure()
+    plt.plot(vol_Volatilidad, label = 'Volatilidad Serie Volatilidad maxima')
+    plt.title('Estretegia Volatilidad')
+    plt.xlabel('Fechas')
+    plt.ylabel('Volatilidad')
+    plt.legend()   
+    # vol_Volatilidad.plot()
 
     return serie_Volatilidad

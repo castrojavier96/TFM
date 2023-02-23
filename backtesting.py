@@ -27,13 +27,15 @@ def backtesting(activos_close,activos_volumen,n_activos,capital_inicial,com, act
                 capital_EW = capital_inicial
                 capital_vol = capital_inicial
                 capital_volmin = capital_inicial
+                capital_cash = (capital_inicial*4*100/90)*0.1
             else: # se actualiza de esta forma para los siguientes rebalanceos y se rebalancea segun el input de la prediccion
-                capital_int = ((n_acciones*activos_close[activos_momentum].iloc[i-1]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i-1]).sum() + delta_EW) +((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin)
+                capital_int = ((n_acciones*activos_close[activos_momentum].iloc[i-1]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i-1]).sum() + delta_EW) +((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol) + ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) + capital_cash
                 
                 capital_momentum = capital_int * reb_modelo.iloc[j,0] 
                 capital_EW = capital_int * reb_modelo.iloc[j,1]
                 capital_vol = capital_int * reb_modelo.iloc[j,2]
                 capital_volmin = capital_int * reb_modelo.iloc[j,3]
+                capital_cash = capital_int * reb_modelo.iloc[j,4]
                 j = j +1
 
             #segun cada estrategia se calcula:
@@ -89,5 +91,5 @@ def backtesting(activos_close,activos_volumen,n_activos,capital_inicial,com, act
             comision_venta = (activos_open[diferencia_total[diferencia_total<0].index].iloc[i]*diferencia_total[diferencia_total<0]).sum()*com*-1
             comision_total = comision_total + comision_venta + comision_compra
         # Se guarda el valor del protafolio valorizado todos los dias al close
-        serie_reb.append(((n_acciones*activos_close[activos_momentum].iloc[i]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i]).sum() + delta_EW) + ((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol)+ ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin))
+        serie_reb.append(((n_acciones*activos_close[activos_momentum].iloc[i]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i]).sum() + delta_EW) + ((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol)+ ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin)+ capital_cash)
     return serie_reb, comision_total, diferencias # se devuelve como output la serie de precios, la comision de esta y el dataframe con todas las ordenes de compra/venta
