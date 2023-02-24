@@ -29,22 +29,24 @@ def obtener_precios_EW(activos_close, activos_volumen,n_activos,capital_inicial,
     #Aqui se grafica la serie hitorica de la estrategia junto con la volatilidad de la misma
     serie_EW = pd.DataFrame(serie_EW)
     serie_EW.set_index(activos_close.index[22:], inplace=True)
+    # Se grafica la serie historica de la estrategia    
     plt.figure()
     plt.plot(serie_EW, label = 'Serie Volumen')
-    plt.title('Estretegia Volumen')
+    plt.title('Serie Precios Volumen')
     plt.xlabel('Fechas')
     plt.ylabel('Precio')
     plt.legend()
-    # serie_EW.plot()
+
     
     rent_EW = np.log(serie_EW).diff().dropna(axis=0)
     vol_EW = rent_EW.rolling(window=20).std()
+    # Se grafica la volatilidad historica de la estrategia
     plt.figure()
     plt.plot(vol_EW, label = 'Volatilidad Serie Volumen')
-    plt.title('Estretegia Volumen')
+    plt.title('Volatilidad Volumen')
     plt.xlabel('Fechas')
     plt.ylabel('Volatilidad')
     plt.legend()    
-    #vol_EW.plot()
+
 
     return serie_EW

@@ -93,4 +93,32 @@ def benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activ
 
         # Se guarda el valor del protafolio valorizado todos los dias al close
         serie_bench.append(((n_acciones*activos_close[activos_momentum].iloc[i]).sum() + delta) + ((n_acciones_EW*activos_close[activos_EW].iloc[i]).sum() + delta_EW) + ((n_acciones_vol*activos_close[activos_vol].iloc[i]).sum() + delta_vol)+ ((n_acciones_volmin*activos_close[activos_volmin].iloc[i]).sum() + delta_volmin)+ capital_cash)
-    return serie_bench, comision_total, diferencias# se devuelve como output la serie de precios, la comision de esta y el dataframe con todas las ordenes de compra/venta
+    
+    serie_bench = pd.DataFrame(serie_bench)
+    serie_bench.set_index(activos_close.index[42:], inplace=True)
+    #Calculamos el rendimiento y desviacion estandar de los datos
+    df_rendimientos = serie_bench.pct_change()
+    rendimiento_promedio = df_rendimientos.mean()
+    desviacion_estandar = df_rendimientos.std()
+
+    # Calculamos el ratio de Sharpe
+    ratio_sharpe = (rendimiento_promedio - 0.0008) / desviacion_estandar 
+
+    # Calculamos el rendimiento promedio y la desviación estándar de los rendimientos negativos
+    rendimientos_negativos = df_rendimientos[df_rendimientos < 0]
+    rendimiento_promedio_negativo = rendimientos_negativos.mean()
+    desviacion_estandar_negativa = rendimientos_negativos.std()
+
+    # Calculamos el ratio de Sortino
+    ratio_sortino = (rendimiento_promedio_negativo - 0.0008) / desviacion_estandar_negativa   
+
+    # Calculamos el máximo precio histórico en cada fecha
+    serie_bench['MaxPrecio'] = serie_bench.cummax()
+    serie_bench = serie_bench.rename(columns={serie_bench.columns[0]: 'serie'})
+
+    # Calculamos el drawdown y el máximo drawdown
+    serie_bench['Drawdown'] = (serie_bench['serie'] / serie_bench['MaxPrecio']) - 1
+    serie_bench['MaxDrawdown'] = serie_bench['Drawdown'].cummin()
+    
+    
+    return serie_bench.iloc[:,0], comision_total, diferencias, ratio_sharpe, ratio_sortino, serie_bench['Drawdown'], serie_bench['MaxDrawdown'].iloc[-1]# se devuelve como output la serie de precios, la comision de esta y el dataframe con todas las ordenes de compra/venta# se devuelve como output la serie de precios, la comision de esta y el dataframe con todas las ordenes de compra/venta

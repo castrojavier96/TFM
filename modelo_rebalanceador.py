@@ -18,7 +18,7 @@ from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
 import seaborn as sn
 
 #Se define la funcion para poder crear y entrenar el modelo
-def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion, pib): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
+def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
     #Le ponemos nombres a las columnas
     serie_momentum.columns = ['Momentum']
     #serie_HRP.columns = ['HRP']
@@ -30,7 +30,6 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     # concatenamos las series de precio en un solo dataframe
     estrategias_close = pd.concat([serie_momentum, serie_EW, serie_volatilidad, serie_volmin,serie_cash], axis=1)
     estrategias_close = estrategias_close.rename(columns={0:'Cash'})
-    estrategias_close.plot() # se grafican para ver que pinta tienen
 
     # Se calcula la rentabilidad de diaria de los datos
     rent_estrategias = np.log(estrategias_close).diff().dropna(axis=0)#.sum(axis=0) # se calculan la rentabilidad de los activos 
@@ -48,7 +47,7 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     datos_inputs.drop(datos_inputs.index[-1], inplace=True)
     datos_inputs.reset_index(drop=True, inplace=True)
     
-    # Se agregan los datos Macroeconomicos como la inflacion y el PIB
+    # Se agregan los datos Macroeconomicos como la inflacion
     inflacion.reset_index(drop=True, inplace=True)
     datos_inputs = pd.concat([datos_inputs, inflacion], ignore_index=True, axis=1) 
 
@@ -115,8 +114,10 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     plt.xlabel('epoch')
     plt.ylabel('accuracy')
     plt.legend()
+    # Se imprimen el accuracy en train y test
+    print("Accuracy (train):", model.evaluate(x_train, t_train))
+    print("Accuracy (test):", model.evaluate(x_test, t_test))
 
-    score = model.evaluate(x_test, t_test) # Evaluamos el modelo
     y_hat = model.predict(x_test) # Se hacen las predicciones de test
     # Se grafican estas predicciones
     plt.figure()
@@ -127,7 +128,7 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion,
     plt.legend()
 
     # Se hacen predicciones para todo el Dataframe y se grafican
-    datos_inputs_esc=scaler.transform(datos_inputs.values)
+    datos_inputs_esc = scaler.transform(datos_inputs.values)
 
     # se calcula la matriz de confucion y se grafica
     matrix = confusion_matrix(np.argmax(t_test,axis = 1), np.argmax(y_hat, axis=1))

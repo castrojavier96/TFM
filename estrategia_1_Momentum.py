@@ -29,22 +29,24 @@ def obtener_precios_mom(activos_close,n_activos,capital_inicial,com):
     # Aqui se grafica la serie historica de la estrategia junto con la volatilidad de la misma
     serie_momentum = pd.DataFrame(serie_momentum) # se pasa a un Dataframe
     serie_momentum.set_index(activos_close.index[22:], inplace=True) # se ponen las fechas
+    # Se grafica la serie historica de la estrategia
     plt.figure()
     plt.plot(serie_momentum, label = 'Serie Momentum')
-    plt.title('Estretegia Momentum')
+    plt.title('Serie Precios Momentum')
     plt.xlabel('Fechas')
     plt.ylabel('Precio')
     plt.legend()
-    #serie_momentum.plot() # se grafica
+
 
     rent_momentum = np.log(serie_momentum).diff().dropna(axis=0)
     vol_momentum = rent_momentum.rolling(window=20).std() # se calcula la volatilidad de los ultimos 20 dias
+    # Se grafica la volatilidad historica de la estrategia
     plt.figure()
     plt.plot(vol_momentum, label = 'Volatilidad serie Momentum')
-    plt.title('Estretegia Momentum')
+    plt.title('Volatilidad Momentum')
     plt.xlabel('Fechas')
     plt.ylabel('Volatilidad')
     plt.legend()
-    #vol_momentum.plot()
+
     
     return serie_momentum

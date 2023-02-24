@@ -106,9 +106,11 @@ def red_neuronal(datos_inputs, datos_output):
     plt.ylabel("Cross-entropy loss")
     plt.title('Error del modelo "Red Neuronal"')
     plt.show()
+    
     # se hacen predicciones
     preds_train = model.predict(X_train).numpy()
     preds_test = model.predict(X_test).numpy()
+
     # Se calcula el accuracy tanto en train como test
     print("Accuracy (train):", model.accuracy(X_train, y_train))
     print("Accuracy (test):", model.accuracy(X_test, y_test))

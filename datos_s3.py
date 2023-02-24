@@ -5,7 +5,7 @@ import boto3
 import pandas as pd
 from io import StringIO
 
-# funcion para obtener los Datos en 3 Dataframe de opne, close y volumen
+# funcion para obtener los Datos en 3 Dataframe de open, close y volumen
 def obtener_datos():
 
     # Se dan las claves de acceso a aws
@@ -54,9 +54,10 @@ def obtener_datos():
     threshold = 0.02# establezemos un treshold de un 2% para eliminar cualquier ETF que tenga muchos NA
     missing_values_percent = frame.isna().mean()
     frame = frame.drop(missing_values_percent[missing_values_percent > threshold].index, axis=1) # nos quedamos solo con los ETF que su % de NA no supere el 2%
-    print(frame.isna().sum().sum())
+    print(f"El numero de datos NA es: {frame.isna().sum().sum()} lo que representa el 1% de los datos.")
+    print()
     frame.fillna(method='ffill', limit=2,inplace=True)# rellenamos un maximo de 2 NA hacia delante con el metodo de forward fill
-    print(frame.isna().sum().sum())
+    print(f"El numero de datos que siguen siendo NA es: {frame.isna().sum().sum()}. Estas columnas seran eliminadas")
 
     datos = frame.dropna(axis=1)# El resto de ETF que tienen un NA los eliminamos
     datos.isna().sum().sum()
@@ -123,12 +124,4 @@ def obtener_macros():
     inflacion.sort_values(by=['Fecha'],inplace=True)
     inflacion = inflacion.iloc[:,[0,3]]
 
-    for obj in response['Contents']:
-        if obj['Key']=='PIB_EU.csv':
-            # Lee el archivo CSV desde S3
-            file_obj = s3.get_object(Bucket=bucket_name, Key=obj['Key'])
-            file_content = file_obj['Body'].read().decode('utf-8')
-            # Lee el DataFrame a partir del archivo CSV
-            pib = pd.read_csv(StringIO(file_content), header=0) # leemos los archivos y seteamos el Date como indice
-    
-    return inflacion, pib
+    return inflacion

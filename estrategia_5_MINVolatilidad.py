@@ -29,22 +29,24 @@ def obtener_precios_volmin(activos_close,n_activos,capital_inicial,com):
     # Aqui se grafica la serie historica de la estrategia junto con la volatilidad de la misma
     serie_Volatilidad = pd.DataFrame(serie_Volatilidad)
     serie_Volatilidad.set_index(activos_close.index[22:], inplace=True)
+    # Se grafica la serie historica de la estrategia
     plt.figure()
     plt.plot(serie_Volatilidad, label = 'Serie Volatilidad minima')
-    plt.title('Estretegia Volatilidad min')
+    plt.title('Serie Precios Volatilidad min')
     plt.xlabel('Fechas')
     plt.ylabel('Precio')
     plt.legend()
-    # serie_Volatilidad.plot()
+
 
     rent_Vol = np.log(serie_Volatilidad).diff().dropna(axis=0)
     vol_Volatilidad = rent_Vol.rolling(window=20).std()
+    # Se grafica la volatilidad historica de la estrategia
     plt.figure()
     plt.plot(vol_Volatilidad, label = 'Volatilidad Serie Volatilidad minima')
-    plt.title('Estretegia Volatilidad min')
+    plt.title('Volatilidad Serie Volatilidad min')
     plt.xlabel('Fechas')
     plt.ylabel('Volatilidad')
     plt.legend()   
-    #vol_Volatilidad.plot()
+
 
     return serie_Volatilidad
