@@ -21,7 +21,6 @@ import seaborn as sn
 def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
     #Le ponemos nombres a las columnas
     serie_momentum.columns = ['Momentum']
-    #serie_HRP.columns = ['HRP']
     serie_EW.columns = ['EW']
     serie_volatilidad.columns = ['Vol']
     serie_volmin.columns = ['Vol_min']

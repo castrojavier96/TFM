@@ -29,8 +29,9 @@ import matplotlib.pyplot as plt
 from graficos import graficar_series_precio
 from scipy.stats import percentileofscore
 
-# se obtienen los datps y se definen parametros iniciales
+# se obtienen los datos y se definen parametros iniciales
 activos_close, activos_volumen, activos_open = obtener_datos()
+inflacion = obtener_macros()
 n_activos = 10
 capital_inicial = 10000
 com = 0.0003
@@ -58,11 +59,9 @@ plt.show()
 
 # Se calculan las series de precios de cada estrategia y se obtiene los datos macroeconomicos
 serie_momentum = obtener_precios_mom(activos_close,n_activos,capital_inicial,com)
-#serie_HRP = obtener_precios_HRP(activos_close)
 serie_EW = obtener_precios_EW(activos_close,activos_volumen,n_activos,capital_inicial,com)
 serie_volatilidad = obtener_precios_vol(activos_close,n_activos,capital_inicial,com)
 serie_volmin  = obtener_precios_volmin(activos_close,n_activos,capital_inicial,com)
-inflacion = obtener_macros()
 
 graficar_series_precio(serie_momentum,serie_EW, serie_volatilidad, serie_volmin)
 
@@ -200,12 +199,6 @@ plt.xlabel('Fecha')
 plt.ylabel('Precio')
 
 plt.figure()
-plt.plot(y_hat_redneuronal)
-plt.title('Predicciones Red Neuronal')
-plt.xlabel('epoch')
-plt.ylabel('predicciones')
-
-plt.figure()
 plt.plot(drawdown, label = 'Drawdown Benchmark')
 plt.title('Drawdown Benchmark')
 plt.xlabel('Fecha')
@@ -255,12 +248,12 @@ serie_monos.iloc[:,ranking_monos.index[0]] = (1 + df_retornos).cumprod()
 
 valor = serie_backtesting.iloc[-1]*44444  # Obtener el valor de la tercera columna en la primera fila
 percentil = percentileofscore(ranking_monos, valor)
-
+print(percentil)
 
 # Se grafican las series de precios de los 3 modelos, el benchmark y el mono del 50%
 plt.figure()
 plt.plot(serie_benchmark, label = "benchmark sintetico")
-plt.plot(serie_red, label = "Red Nueronal")
+plt.plot(serie_red, label = "Red Neuronal")
 plt.plot(serie_regresion, label = "Regresion logistica")
 plt.plot(serie_backtesting, label = "Modelo")
 plt.plot(serie_monos.iloc[:,ranking_monos.index[fila_central]], label = "Mono 50")
@@ -272,10 +265,11 @@ plt.legend()
 
 # Se concatenan las comisiones de todo lo anterior y se grafican
 plt.figure()
-categorias = ['Comision modelo', 'Comision Red Neuronal', 'Comision Regresion', 'Comision Benchmark', 'Comision mono 50%', 'Comision mono 100%']
+categorias = ['Modelo', 'Red Neuronal', 'Regresion', 'Benchmark', 'Mono 50%', 'Mono 100%']
 valores = [comision_backtesting, comision_red, comision_regresion, comision_benchmark, comision_50.iloc[0], comision_100.iloc[0]]
 colores = plt.cm.Set1(np.linspace(0, 1, len(categorias)))
 fig, ax = plt.subplots()
 ax.bar(categorias, valores, color=colores, width=0.1)
-ax.tick_params(axis='x', labelsize=5.5)
+ax.tick_params(axis='x', labelsize=8)
+plt.title('Comisiones')
 plt.show()
