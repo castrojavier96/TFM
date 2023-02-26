@@ -1,21 +1,21 @@
 # Script que lee los datos desde un bucket de S3 y obtiene dataframes de Open, Close y Volumen
 
-#Importamos librerias
+# Importamos librerias
 import boto3
 import pandas as pd
 from io import StringIO
 
-# funcion para obtener los Datos en 3 Dataframe de open, close y volumen
+# Función para obtener los datos en 3 DataFrames de open, close y volumen
 def obtener_datos():
 
-    # Se dan las claves de acceso a aws
+    # Se dan las claves de acceso a AWS
     access_key_id = 'AKIAWMUUWTYFIT3U6WMF'
     secret_access_key = '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'
 
     # Inicia la sesión de boto3
     s3 = boto3.client('s3',
-    aws_access_key_id=access_key_id,
-    aws_secret_access_key=secret_access_key)
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key)
 
     # Nombre del bucket y prefijo para los archivos CSV
     bucket_name = 'tfmrebalanceador'
@@ -24,48 +24,49 @@ def obtener_datos():
     response = s3.list_objects_v2(Bucket=bucket_name)
 
     # Lista para almacenar todos los DataFrames
-
     li = []
     li_volumen = []
     li_open = []
     new_li_names = []
     li_names = []
+
     # Iterar sobre cada objeto en el bucket y leer los archivos CSV
     for obj in response['Contents']:
-        if obj['Key'].endswith('.csv') and obj['Key']!='inflacion.csv' and obj['Key']!='PIB_EU.csv':
+        if obj['Key'].endswith('.csv') and obj['Key'] != 'inflacion.csv' and obj['Key'] != 'PIB_EU.csv':
             # Lee el archivo CSV desde S3
             file_obj = s3.get_object(Bucket=bucket_name, Key=obj['Key'])
             file_content = file_obj['Body'].read().decode('utf-8')
             # Lee el DataFrame a partir del archivo CSV
             df = pd.read_csv(StringIO(file_content), index_col='Date', header=0) # leemos los archivos y seteamos el Date como indice
-            df_close = df.loc['2013-01-01':'2022-11-01',['Close']]# nos quedamos con los datos desde el 2013 a Noviembre 2022
-            df_volumen = df.loc['2013-01-01':'2022-11-01',['Volume']]
-            df_open = df.loc['2013-01-01':'2022-11-01',['Open']]
+            df_close = df.loc['2013-01-01':'2022-11-01', ['Close']] # nos quedamos con los datos desde el 2013 a Noviembre 2022
+            df_volumen = df.loc['2013-01-01':'2022-11-01', ['Volume']]
+            df_open = df.loc['2013-01-01':'2022-11-01', ['Open']]
             li.append(df_close)
             li_volumen.append(df_volumen)
             li_open.append(df_open)
-            new_li_names.append(pd.read_csv(StringIO(file_content),sep="|"))
+            new_li_names.append(pd.read_csv(StringIO(file_content), sep="|"))
             li_names.append(obj['Key'].split(".")[0][-4:])
 
-    frame = pd.concat(li, axis=1, ignore_index=True) # concatenamos en un dataframe 
-    frame.sort_values(by=['Date'],inplace=True)# ordenamos los datos para que queden por fechas
-    frame.columns = li_names # le ponemos los nombre de los ETF a cada columna
 
-    threshold = 0.02# establezemos un treshold de un 2% para eliminar cualquier ETF que tenga muchos NA
+    frame = pd.concat(li, axis=1, ignore_index=True)  # Concatenamos en un dataframe
+    frame.sort_values(by=['Date'], inplace=True)  # Ordenamos los datos para que queden por fechas
+    frame.columns = li_names  # Le ponemos los nombres de los ETF a cada columna
+
+    threshold = 0.02  # Establecemos un threshold de un 2% para eliminar cualquier ETF que tenga muchos NA
     missing_values_percent = frame.isna().mean()
-    frame = frame.drop(missing_values_percent[missing_values_percent > threshold].index, axis=1) # nos quedamos solo con los ETF que su % de NA no supere el 2%
-    print(f"El numero de datos NA es: {frame.isna().sum().sum()} lo que representa el 1% de los datos.")
+    frame = frame.drop(missing_values_percent[missing_values_percent > threshold].index, axis=1)  # Nos quedamos solo con los ETF que su % de NA no supere el 2%
+    print(f"El número de datos NA es: {frame.isna().sum().sum()} lo que representa el 1% de los datos.")
     print()
-    frame.fillna(method='ffill', limit=2,inplace=True)# rellenamos un maximo de 2 NA hacia delante con el metodo de forward fill
-    print(f"El numero de datos que siguen siendo NA es: {frame.isna().sum().sum()}. Estas columnas seran eliminadas")
+    frame.fillna(method='ffill', limit=2, inplace=True)  # Rellenamos un máximo de 2 NA hacia delante con el método de forward fill
+    print(f"El número de datos que siguen siendo NA es: {frame.isna().sum().sum()}. Estas columnas serán eliminadas.")
 
-    datos = frame.dropna(axis=1)# El resto de ETF que tienen un NA los eliminamos
+    datos = frame.dropna(axis=1)  # El resto de ETF que tienen un NA los eliminamos
     datos.isna().sum().sum()
-    datos.index = pd.to_datetime(datos.index) # pasamos el indice a un formato datetime
+    datos.index = pd.to_datetime(datos.index)  # Pasamos el índice a un formato datetime
 
-    # Este mismo proceso lo hacemos para los datos de volumen 
-    frame_volumen = pd.concat(li, axis=1, ignore_index=True)
-    frame_volumen.sort_values(by=['Date'],inplace=True)
+    # Este mismo proceso lo hacemos para los datos de volumen
+    frame_volumen = pd.concat(li_volumen, axis=1, ignore_index=True)
+    frame_volumen.sort_values(by=['Date'], inplace=True)
     frame_volumen.columns = li_names
 
     missing_values_percent = frame_volumen.isna().mean()
@@ -79,7 +80,7 @@ def obtener_datos():
 
     # Este mismo proceso lo hacemos para los datos de Open
     frame_open = pd.concat(li, axis=1, ignore_index=True)
-    frame_open.sort_values(by=['Date'],inplace=True)
+    frame_open.sort_values(by=['Date'], inplace=True)
     frame_open.columns = li_names
 
     missing_values_percent = frame_open.isna().mean()
@@ -91,7 +92,7 @@ def obtener_datos():
     datos_open.isna().sum().sum()
     datos_open.index = pd.to_datetime(datos_open.index)
 
-    return datos, datos_volumen, datos_open # Se puede ver que los 3 Dataframe terminan con 56 activos y 2524 dias
+    return datos, datos_volumen, datos_open  # Se puede ver que los 3 Dataframe terminan con 56 activos y 2524 dias
 
 
 def obtener_macros():

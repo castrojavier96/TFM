@@ -18,7 +18,7 @@ from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
 import seaborn as sn
 
 #Se define la funcion para poder crear y entrenar el modelo
-def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
+def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion, dias_reb): # como inputs recibe las series de precios de las estrategias y datos macroeconomicos
     #Le ponemos nombres a las columnas
     serie_momentum.columns = ['Momentum']
     serie_EW.columns = ['EW']
@@ -29,9 +29,11 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion)
     # concatenamos las series de precio en un solo dataframe
     estrategias_close = pd.concat([serie_momentum, serie_EW, serie_volatilidad, serie_volmin,serie_cash], axis=1)
     estrategias_close = estrategias_close.rename(columns={0:'Cash'})
+    #estrategias_close = estrategias_close.iloc[42:,:]
 
     # Se calcula la rentabilidad de diaria de los datos
     rent_estrategias = np.log(estrategias_close).diff().dropna(axis=0)#.sum(axis=0) # se calculan la rentabilidad de los activos 
+    rent_estrategias.corr()
     # Se hace un resample para tener datos de rentabilidad y volatilidad mensual
     rent_estrategias_mensual = rent_estrategias.resample('M').sum()
     vol_estrategias_mensual = rent_estrategias.resample('M').std()
@@ -72,25 +74,35 @@ def modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion)
     x_test=scaler.transform(x_test)
     #Se define el modelo
     model = keras.Sequential()
-
+    
     #-------------------------------------------------------------
     # TO-DO: Incluye aquí las capas necesarias
     l1_reg = 0.005
     l2_reg = 0.01
     dropout = 0.25
-    # Modelo de 3 capas densas, con una salida de 4 y funcion de activacion softmax para que sumen 1
-    model.add(Dense(128,input_shape=(12,), activation='relu',kernel_initializer=keras.initializers.glorot_normal(),kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
+    
+    # Modelo de 3 capas densas, con una salida de 4 y función de activación softmax para que sumen 1
+    model.add(Dense(128, input_shape=(12,), activation='relu',
+                    kernel_initializer=keras.initializers.glorot_normal(),
+                    kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
     model.add(BatchNormalization())
     model.add(Activation('sigmoid'))
     model.add(Dropout(rate=dropout))
-    model.add(Dense(64,input_shape=(128,), activation='relu',kernel_initializer=keras.initializers.glorot_normal(),kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
+    
+    model.add(Dense(64, input_shape=(128,), activation='relu',
+                    kernel_initializer=keras.initializers.glorot_normal(),
+                    kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
     model.add(BatchNormalization())
     model.add(Activation('sigmoid'))
     model.add(Dropout(rate=dropout))
-    model.add(Dense(5,input_shape=(64,), activation='softmax',kernel_initializer=keras.initializers.glorot_normal(),kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
+    
+    model.add(Dense(5, input_shape=(64,), activation='softmax',
+                    kernel_initializer=keras.initializers.glorot_normal(),
+                    kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg)))
     #-------------------------------------------------------------
-
+    
     model.summary()
+
     # Optimizador adam, loss categorical crossentropy y early Stopping
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer,metrics=['categorical_accuracy'])

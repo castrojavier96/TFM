@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def obtener_precios_vol(activos_close,n_activos,capital_inicial,com):
+def obtener_precios_vol(activos_close,n_activos,capital_inicial,com, dias_reb):
     # creamos listas a rellenar
     serie_Volatilidad = []
     comision_total = 0# inicializamos la comision

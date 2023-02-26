@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def obtener_precios_EW(activos_close, activos_volumen,n_activos,capital_inicial,com):
+def obtener_precios_EW(activos_close, activos_volumen,n_activos,capital_inicial,com, dias_reb):
 
     # creamos listas a rellenar
     serie_EW = []

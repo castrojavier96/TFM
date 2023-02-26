@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def obtener_precios_mom(activos_close,n_activos,capital_inicial,com):
+def obtener_precios_mom(activos_close,n_activos,capital_inicial,com, dias_reb):
 
     # creamos listas a rellenar
     serie_momentum = []
     comision_total = 0 # inicializamos la comision
     for i in range(22,len(activos_close)): # for que va leyendo el dataframe de datos
-        if activos_close.index[i].month != activos_close.index[i-1].month: # si hay cambio de mes se rebalancea
+        if activos_close.index[i].month != activos_close.index[i-1].month: #i==22 or (i-1) % dias_reb == 0: si hay cambio de mes se rebalancea
             if i==22: # si es el primer dia del dataframe se utiliza el capital inicial, sino la valorizacion de la serie de precios de la estrategia
                 capital = capital_inicial
             else:
