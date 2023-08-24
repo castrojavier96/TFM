@@ -18,10 +18,11 @@ from estrategia_1_Momentum import obtener_precios_mom
 from estrategia_3_EW import obtener_precios_EW
 from estrategia_4_Volatilidad import obtener_precios_vol
 from estrategia_5_MINVolatilidad import obtener_precios_volmin
+from investmentclock import etiquetasic
 from benchmark import benchmark
 from monos import monos
 from datos_s3 import obtener_datos, obtener_macros
-from modelo_rebalanceador import modelo
+from modelo_rebalanceador import modelo_reb
 from backtesting import backtesting
 from regresion_logistica import regresion_logistica
 from red_neuronal import red_neuronal
@@ -35,7 +36,7 @@ inflacion = obtener_macros()
 n_activos = 10
 capital_inicial = 10000
 com = 0.0003
-dias_reb = 7
+dias_reb = 15
 
 # Se calcula la rentabilidad de los activos y se visualizan las rentabilidades
 df_retornos = activos_close.pct_change()
@@ -48,7 +49,7 @@ activos_top_bot = lista3 = activos_top5 + activos_bot5
 
 # Graficamos la rentabilidad acumulada de los 5 activos con mayor y menor rentabilidad acumulada
 fig, ax = plt.subplots(figsize=(10, 5))
-df_rentabilidad[activos_top_bot].plot(ax=ax)
+df_rentabilidad.plot(ax=ax)#[activos_top_bot].plot(ax=ax)
 
 # Creamos la leyenda para los 5 primeros y los 5 últimos activos
 handles, labels = plt.gca().get_legend_handles_labels()
@@ -60,19 +61,44 @@ plt.ylabel('Rentabilidad acumulada')
 plt.grid(True)
 plt.show()
 
-dias_reb = 15
+activos_volumen= pd.read_csv('etf_data_volumen.csv',index_col=0)
+activos_volumen.index = pd.to_datetime(activos_volumen.index)
+new_index = pd.date_range(start=activos_volumen.index.min(), end=activos_volumen.index.max(), freq='B')
+activos_volumen = activos_volumen.reindex(new_index, method='ffill')
+activos_volumen = activos_volumen.loc[:'2023-06-30']
+activos_volumen
+
+activos_close= pd.read_csv('etf_data.csv',index_col=0)
+activos_close.index = pd.to_datetime(activos_close.index)
+new_index = pd.date_range(start=activos_close.index.min(), end=activos_close.index.max(), freq='B')
+activos_close = activos_close.reindex(new_index, method='ffill')
+activos_close = activos_close.loc['2015-08-24':'2023-06-30']
+
+activos_open= pd.read_csv('etf_data.csv',index_col=0)
+activos_open.index = pd.to_datetime(activos_open.index)
+new_index = pd.date_range(start=activos_open.index.min(), end=activos_open.index.max(), freq='B')
+activos_open = activos_open.reindex(new_index, method='ffill')
+activos_open = activos_open.loc['2015-08-21':'2023-06-30']
+activos_open = activos_open.iloc[:-1,]
+
+etiquetas = etiquetasic()
 
 # Se calculan las series de precios de cada estrategia y se obtienen los datos macroeconómicos
-serie_momentum = obtener_precios_mom(activos_close, n_activos, capital_inicial, com, dias_reb)
-serie_EW = obtener_precios_EW(activos_close, activos_volumen, n_activos, capital_inicial, com, dias_reb)
-serie_volatilidad = obtener_precios_vol(activos_close, n_activos, capital_inicial, com, dias_reb)
-serie_volmin = obtener_precios_volmin(activos_close, n_activos, capital_inicial, com, dias_reb)
+serie_momentum = obtener_precios_mom(activos_close, n_activos, capital_inicial, com, dias_reb, etiquetas)
+serie_EW = obtener_precios_EW(activos_close, activos_volumen, n_activos, capital_inicial, com, etiquetas)
+serie_volatilidad = obtener_precios_vol(activos_close, n_activos, capital_inicial, com, dias_reb, etiquetas)
+serie_volmin = obtener_precios_volmin(activos_close, n_activos, capital_inicial, com, dias_reb, etiquetas)
 
 graficar_series_precio(serie_momentum, serie_EW, serie_volatilidad, serie_volmin)
 
 # MODELO (SE DEFINE Y ENTRENA NUESTRO MODELO, Y NOS QUEDAMOS CON EL OUTPUT Y LAS PREDICCIONES)
-model, datos_inputs, datos_output, datos_inputs_esc = modelo(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, inflacion, dias_reb)
+model, datos_inputs, datos_output, datos_inputs_esc = modelo_reb(serie_momentum, serie_EW, serie_volatilidad, serie_volmin, etiquetas)
 y_hat = model.predict(datos_inputs_esc)
+y_hat_binario = np.where(y_hat > 0.5, 1, 0)
+
+y_hat_reb = pd.DataFrame(y_hat).idxmax(axis=1)
+
+
 
 # REGRESIÓN LOGÍSTICA (SE DEFINE Y ENTRENA UNA REGRESIÓN LOGÍSTICA, Y NOS QUEDAMOS CON EL OUTPUT Y LAS PREDICCIONES)
 modelo_regresion = regresion_logistica(datos_inputs, datos_output)
@@ -84,7 +110,7 @@ y_hat_redneuronal = modelo_redneuronal.predict(datos_inputs_esc)
 y_hat_redneuronal = y_hat_redneuronal.numpy()
 
 # BACKTESTING DE NUESTRO MODELO
-serie_backtesting, comision_backtesting, diferencias, ratio_sharpe_modelo, ratio_sortino_modelo, drawdown, maxdradown_modelo = backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat, dias_reb)
+serie_backtesting, comision_backtesting, diferencias, ratio_sharpe_modelo, ratio_sortino_modelo, drawdown, maxdradown_modelo = backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat, dias_reb, etiquetas_ic)
 
 # Calculamos los retornos acumulados y guardamos un Dataframe con todas las ordenes de compra
 df_retornos = serie_backtesting.pct_change()
@@ -100,7 +126,7 @@ plt.ylabel('Precio')
 plt.legend()
 
 plt.figure()
-plt.plot(y_hat)
+plt.plot(y_hat_reb)
 plt.title('Predicciones Modelo')
 plt.xlabel('meses')
 plt.ylabel('predicciones')
@@ -120,7 +146,7 @@ print(f"El Maximo drawdown del modelo es: {maxdradown_modelo}")
 print()
 
 # BACKTESTING REGRESION LOGISTICA
-serie_regresion, comision_regresion, diferencias_regresion, ratio_sharpe_reg, ratio_sortino_reg, drawdown, maxdradown_reg = backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat_regresion, dias_reb)
+serie_regresion, comision_regresion, diferencias_regresion, ratio_sharpe_reg, ratio_sortino_reg, drawdown, maxdradown_reg = backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat_regresion, dias_reb, etiquetas_ic)
 
 # Calculamos los retornos acumulados y guardamos un DataFrame con todas las ordenes de compra
 df_retornos = serie_regresion.pct_change()
@@ -193,7 +219,7 @@ print(f"El Maximo drawdown del modelo Red Neuronal es: {maxdradown_red}")
 
 # BENCHMARK SINTETICO - EW de las estrategias
 # Se crea un benchamk sintetico que hace todos los meses un Equal Wight de las estratgeias y el cash, se grafican los resultados
-serie_benchmark, comision_benchmark, diferencias, ratio_sharpe_bench, ratio_sortino_bench, drawdown, maxdradown_bench = benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_open, dias_reb)
+serie_benchmark, comision_benchmark, diferencias, ratio_sharpe_bench, ratio_sortino_bench, drawdown, maxdradown_bench = benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_open, dias_reb, etiquetas_ic)
 
 df_retornos = serie_benchmark.pct_change()
 serie_benchmark = (1 + df_retornos).cumprod()
@@ -226,7 +252,7 @@ serie_monos = []
 comisiones_monos = []
 for i in range(10):
     serie_monos_int, comision_monos, diferencias = monos(
-        activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, dias_reb
+        activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, dias_reb, etiquetas_ic
     )
     serie_monos.append(serie_monos_int)
     comisiones_monos.append(comision_monos)
@@ -261,8 +287,8 @@ print(percentil)
 
 # Se grafican las series de precios de los 3 modelos, el benchmark y el mono del 50%
 plt.figure()
-plt.plot(serie_benchmark, label="benchmark sintetico")
-plt.plot(serie_red, label="Red Neuronal")
+#plt.plot(serie_benchmark, label="benchmark sintetico")
+#plt.plot(serie_red, label="Red Neuronal")
 plt.plot(serie_regresion, label="Regresion logistica")
 plt.plot(serie_backtesting, label="Modelo")
 plt.plot(serie_monos.iloc[:, ranking_monos.index[fila_central]], label="Mono 50")

@@ -123,7 +123,7 @@ def regresion_logistica(datos_inputs, datos_output):
 
   # Se grafican los falsos positivos y falsos negativos
   plt.figure(figsize=(16, 4))
-  for i in range(5):
+  for i in range(4):
       fpr, tpr, thresholds = roc_curve(y_test == i, np.argmax(preds_test, axis=1) == i)
       plt.subplot(1,5,i+1)
       plt.plot(fpr, tpr)
@@ -135,7 +135,7 @@ def regresion_logistica(datos_inputs, datos_output):
 
   # Se grafica el recall  y la presicion
   plt.figure(figsize=(16, 4))
-  for i in range(5):
+  for i in range(4):
       prec, recall, _ = precision_recall_curve(y_test == i, np.argmax(preds_test, axis=1) == i)
       print(recall, prec)
       plt.subplot(1,5,i+1)

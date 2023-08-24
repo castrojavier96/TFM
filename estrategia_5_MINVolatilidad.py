@@ -4,18 +4,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def obtener_precios_volmin(activos_close,n_activos,capital_inicial,com, dias_reb):
+def obtener_precios_volmin(activos_close,n_activos,capital_inicial,com, dias_reb, etiquetas):
     # creamos listas a rellenar
     serie_Volatilidad = []
+    sapeo=0
     comision_total = 0# inicializamos la comision
     for i in range(22,len(activos_close)):# for que va leyendo el dataframe de datos
-        if activos_close.index[i].month != activos_close.index[i-1].month:# si hay cambio de mes se rebalancea
+        if i==22 or (etiquetas.iloc[i,0] != etiquetas.iloc[i-1,0]):# si hay cambio de mes se rebalancea
             if i==22: # si es el primer dia del dataframe se utiliza el capital inicial, sino la valorizacion de la serie de precios de la estrategia
                 capital = capital_inicial
             else:
                 capital = delta + (n_acciones*activos_close[activos_Volatilidad].iloc[i-1]).sum() #(n_acciones*activos_close[activos_Volatilidad].iloc[i-1]).sum()
 
-            rent_activos = np.log(activos_close).diff()[i-20:i-1].dropna(axis=0)# se calcula la rentabilidad de los activos en los ultimos 20 dias
+            rent_activos = np.log(activos_close).diff()[i-5:i-1].dropna(axis=0)# se calcula la rentabilidad de los activos en los ultimos 20 dias
             vol_activos = rent_activos.std() # se calcula la volatilidad de la rentabilidad de los ultimos 20 dias
             activos_Volatilidad = vol_activos.sort_values(ascending = True)[0:n_activos].index# se ordenan de mayor a menor y se guardan los 10 primeros
             n_acciones = (capital/10)//activos_close[activos_Volatilidad].iloc[i-1] # se calcula la cantidad de acciones a comprar
@@ -23,7 +24,7 @@ def obtener_precios_volmin(activos_close,n_activos,capital_inicial,com, dias_reb
             delta = capital - capital_invertido# calculamos el diferencial entre el capital disponible al que realmente se invirtio
             comision = capital_invertido*com# se calcula la comision
             comision_total = comision_total + comision# se agrega esta comision al costo de comision total acumulada de la estrategia
-
+            sapeo = sapeo+1
         serie_Volatilidad.append((n_acciones*activos_close[activos_Volatilidad].iloc[i]).sum() + delta)# se obtiene el valor de hoy de la estrategia y se une a la lista para crear la serie de precios
 
     # Aqui se grafica la serie historica de la estrategia junto con la volatilidad de la misma

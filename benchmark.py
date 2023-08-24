@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 #Se define la funcion backtesting con sus inputs
-def benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_open, dias_reb):
+def benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activos_open, dias_reb, y_hat_reb):
     # Se inicializan las listas y variable que se van a rellenar
     serie_bench = []
     diferencias = []
@@ -18,27 +18,28 @@ def benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activ
     df_acciones_mes_pasado_EW = pd.DataFrame(0, index=[0], columns=range(10))
     df_acciones_mes_pasado_vol = pd.DataFrame(0, index=[0], columns=range(10))
     df_acciones_mes_pasado_volmin = pd.DataFrame(0, index=[0], columns=range(10))  
+    z = 0
+    for i in range(54,len(activos_close)):
 
-    for i in range(42,len(activos_close)):
-        if activos_close.index[i].month != activos_close.index[i-1].month:
-            reb_bench = pd.DataFrame({'A':[1/5], 'B':[1/5], 'C':[1/5], 'D':[1/5], 'E':[1/5]})# se guardan los valores para rebalancear, en este caso EW de las estrategias
-            if i==42: # condicion de si se iniciando el dataframe para definir el capital a utilizar
+        if i==54 or (y_hat_reb.iloc[z,0] != y_hat_reb.iloc[z-1,0]):
+            reb_bench = pd.DataFrame({'A':[1/4], 'B':[1/4], 'C':[1/4], 'D':[1/4]})# se guardan los valores para rebalancear, en este caso EW de las estrategias
+            if i==54: # condicion de si se iniciando el dataframe para definir el capital a utilizar
                 capital_momentum = capital_inicial
                 capital_EW = capital_inicial
                 capital_vol = capital_inicial
                 capital_volmin = capital_inicial
-                capital_cash = (capital_inicial*4*100/90)*0.1
+                
             else:# se actualiza de esta forma para los siguientes rebalanceos y se rebalancea segun el input de la prediccion
                 capital_int = ((n_acciones * activos_close[activos_momentum].iloc[i - 1]).sum() + delta) + (
                             (n_acciones_EW * activos_close[activos_EW].iloc[i - 1]).sum() + delta_EW) + (
                                           (n_acciones_vol * activos_close[activos_vol].iloc[i]).sum() + delta_vol) + (
-                                          (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) + capital_cash
+                                          (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin)
 
                 capital_momentum = capital_int * reb_bench.iloc[0,0]
                 capital_EW = capital_int * reb_bench.iloc[0,1]
                 capital_vol = capital_int * reb_bench.iloc[0,2]
                 capital_volmin = capital_int * reb_bench.iloc[0,3]
-                capital_cash = capital_int * reb_bench.iloc[0,4]
+                
 
             #segun cada estrategia se calcula:
             # - Numero de acciones a comprar
@@ -93,19 +94,18 @@ def benchmark(activos_close,activos_volumen,n_activos,capital_inicial,com, activ
             comision_compra = (activos_close[diferencia_total[diferencia_total>0].index].iloc[i]*diferencia_total[diferencia_total>0]).sum()*com
             comision_venta = (activos_open[diferencia_total[diferencia_total<0].index].iloc[i]*diferencia_total[diferencia_total<0]).sum()*com*-1
             comision_total = comision_total + comision_venta + comision_compra
-
+        z = z+1
         # Se guarda el valor del protafolio valorizado todos los dias al close
         serie_bench.append(
             (
                 (n_acciones * activos_close[activos_momentum].iloc[i]).sum() + delta +
                 (n_acciones_EW * activos_close[activos_EW].iloc[i]).sum() + delta_EW +
                 (n_acciones_vol * activos_close[activos_vol].iloc[i]).sum() + delta_vol +
-                (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin +
-                capital_cash
+                (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin 
             )
         )    
     serie_bench = pd.DataFrame(serie_bench)
-    serie_bench.set_index(activos_close.index[42:], inplace=True)
+    serie_bench.set_index(activos_close.index[54:], inplace=True)
     #Calculamos el rendimiento y desviacion estandar de los datos
     df_rendimientos = serie_bench.pct_change()
     rendimiento_promedio = df_rendimientos.mean()

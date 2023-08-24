@@ -7,12 +7,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Se define la función backtesting con sus inputs
-def backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat, dias_reb):
+def backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com, activos_open, y_hat, dias_reb, y_hat_reb):
     # Se inicializan las listas y variable que se van a rellenar
     serie_reb = []
     diferencias = []
     comision_total = 0
-
+    #etiquetas = etiquetas.loc['2015-08-24':'2023-06-30']
     # Dataframes de 0
     df_acciones_mes_pasado = pd.DataFrame(0, index=[0], columns=range(10))
     df_acciones_mes_pasado_EW = pd.DataFrame(0, index=[0], columns=range(10))
@@ -20,26 +20,28 @@ def backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com,
     df_acciones_mes_pasado_volmin = pd.DataFrame(0, index=[0], columns=range(10))
 
     j = 0  # contador
-    for i in range(42, len(activos_close)):
-        if activos_close.index[i].month != activos_close.index[i - 1].month:
+    z = 0
+    for i in range(54, len(activos_close)):
+
+        if i==54 or (y_hat_reb.iloc[z,0] != y_hat_reb.iloc[z-1,0]):#activos_close.index[i].month != activos_close.index[i - 1].month:
             reb_modelo = pd.DataFrame(y_hat)  # se guardan las predicciones hechas por los modelos en un dataframe
-            if i == 42:  # condición de si se está iniciando el dataframe para definir el capital a utilizar
+            if i == 54:  # condición de si se está iniciando el dataframe para definir el capital a utilizar
                 capital_momentum = capital_inicial
                 capital_EW = capital_inicial
                 capital_vol = capital_inicial
                 capital_volmin = capital_inicial
-                capital_cash = (capital_inicial * 4 * 100 / 90) * 0.1
+
             else:  # se actualiza de esta forma para los siguientes rebalanceos y se rebalancea según el input de la predicción
                 capital_int = ((n_acciones * activos_close[activos_momentum].iloc[i - 1]).sum() + delta) + (
                             (n_acciones_EW * activos_close[activos_EW].iloc[i - 1]).sum() + delta_EW) + (
                                           (n_acciones_vol * activos_close[activos_vol].iloc[i]).sum() + delta_vol) + (
-                                          (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) + capital_cash
+                                          (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin) 
 
                 capital_momentum = capital_int * reb_modelo.iloc[j, 0]
                 capital_EW = capital_int * reb_modelo.iloc[j, 1]
                 capital_vol = capital_int * reb_modelo.iloc[j, 2]
                 capital_volmin = capital_int * reb_modelo.iloc[j, 3]
-                capital_cash = capital_int * reb_modelo.iloc[j, 4]
+
                 j = j + 1
 
 
@@ -96,20 +98,19 @@ def backtesting(activos_close, activos_volumen, n_activos, capital_inicial, com,
             comision_compra = (activos_close[diferencia_total[diferencia_total > 0].index].iloc[i] * diferencia_total[diferencia_total > 0]).sum() * com
             comision_venta = (activos_open[diferencia_total[diferencia_total < 0].index].iloc[i] * diferencia_total[diferencia_total < 0]).sum() * com * -1
             comision_total = comision_total + comision_venta + comision_compra
-
+        z = z+1
         # Se guarda el valor del portafolio valorizado todos los días al cierre.
         serie_reb.append(
             (
                 (n_acciones * activos_close[activos_momentum].iloc[i]).sum() + delta +
                 (n_acciones_EW * activos_close[activos_EW].iloc[i]).sum() + delta_EW +
                 (n_acciones_vol * activos_close[activos_vol].iloc[i]).sum() + delta_vol +
-                (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin +
-                capital_cash
+                (n_acciones_volmin * activos_close[activos_volmin].iloc[i]).sum() + delta_volmin 
             )
         )
 
     serie_reb = pd.DataFrame(serie_reb)
-    serie_reb.set_index(activos_close.index[42:], inplace=True)
+    serie_reb.set_index(activos_close.index[54:], inplace=True)
 
     # Calculamos el rendimiento y desviación estándar de los datos.
     df_rendimientos = serie_reb.pct_change()

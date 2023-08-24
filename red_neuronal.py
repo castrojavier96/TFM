@@ -93,7 +93,7 @@ def red_neuronal(datos_inputs, datos_output):
     nepocas = 500
     eta = 0.1
     # Se inicializa el modelo
-    model = NeuralNetworkModel([12, 20, 5])
+    model = NeuralNetworkModel([10, 20, 4])
 
     y_train = y_train.reshape(y_train.shape[0],1).astype(np.int64)# Se hace el reshape para pasar de (81,) a (81,1)
     y_test = y_test.reshape(y_test.shape[0],1)
